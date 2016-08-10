@@ -5,6 +5,7 @@
 
 #Step 3: line by line blast. Make sure that linebyline.R is in the directory with your fasta file and tempout file.
 noseqs=`wc -l tempout | awk '{print $1}'`
+echo "seqid" "pident" "match_length" "mismatch" "gapopen" "qstart" "qend" "sstart" "send" "evalue" "bitscore" "scaffold_length" > blastoutput.txt
 for i in `seq 1 2 $noseqs`;
 do tail -n+$i tempout | head -n1 > tempseq;
 j=`expr $i + 1`;
