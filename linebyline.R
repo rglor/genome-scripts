@@ -1,5 +1,6 @@
 length <- as.matrix(read.table("length.txt"))
 blast <- as.matrix(read.table("rawblast.txt"))
+print(blast[2,1])
 if(dim(blast)[1]>1) {
 blast <- blast[-1,]
 blast <- blast[(which(blast[,1]==blast[,2])),]
