@@ -4,6 +4,7 @@
 ~/bin/ncbi-blast-2.2.30+/bin/makeblastdb -in a.lines.fasta -dbtype nucl
 
 #Step 3: line by line blast. Make sure that linebyline.R is in the directory with your fasta file and tempout file.
+#Change db to whatever yours is called in line 16
 noseqs=`wc -l tempout | awk '{print $1}'`
 echo "seqid" "pident" "match_length" "mismatch" "gapopen" "qstart" "qend" "sstart" "send" "evalue" "bitscore" "scaffold_length" > blastoutput.txt
 for i in `seq 1 2 $noseqs`;
