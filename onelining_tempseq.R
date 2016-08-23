@@ -13,15 +13,16 @@ sequencepaste <- NULL
 
 for (j in 2:rows) {
 if ((length(grep(">",intable[j,1])))>0) {
-to_write <- toupper(sequencepaste)
+to_write <- sequencepaste
 to_write <- rbind(to_write,intable[j,1])
 write.table(to_write, "tempseq",quote=FALSE, col.names=FALSE,row.names=FALSE,append=TRUE)
 sequencepaste <- NULL
 } else {
 sequencepaste <- paste(sequencepaste,intable[j,1],sep="")
 }
+print(j/rows*100)
 }
 
-write.table(toupper(sequencepaste), "tempseq",quote=FALSE, col.names=FALSE,row.names=FALSE,append=TRUE)
+write.table(sequencepaste, "tempseq",quote=FALSE, col.names=FALSE,row.names=FALSE,append=TRUE)
 
 q()
