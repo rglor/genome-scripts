@@ -16,6 +16,6 @@ Rscript onelining_tempseq.R;
 rm tempoutseq;
 tail -n+2 tempseq | head -n1 | awk '{print length}' > length.txt;
 echo "qseqid" "sqeqid" "pident" "match_length" "mismatch" "gapopen" "qstart" "qend" "sstart" "send" "evalue" "bitscore" > rawblast.txt;
-~/bin/ncbi-blast-2.2.30+/bin/blastn -db trunk_anole_19Jun2016_xkeD9.fasta -query tempseq -perc_identity 75 -outfmt 6 >> rawblast.txt;
+~/bin/ncbi-blast-2.2.30+/bin/blastn -db trunk_anole_19Jun2016_xkeD9.fasta -query tempseq -perc_identity 75 -outfmt 6 -lcase_masking >> rawblast.txt;
 Rscript linebyline.R >> linebylineblastlog.txt;
 done;
