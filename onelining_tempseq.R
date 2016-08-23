@@ -20,7 +20,6 @@ sequencepaste <- NULL
 } else {
 sequencepaste <- paste(sequencepaste,intable[j,1],sep="")
 }
-print(j/rows*100)
 }
 
 write.table(sequencepaste, "tempseq",quote=FALSE, col.names=FALSE,row.names=FALSE,append=TRUE)
