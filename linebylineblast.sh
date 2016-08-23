@@ -14,5 +14,5 @@ tail -n+$j tempout | head -n1 >> tempseq;
 tail -n+$j tempout | head -n1 | awk '{print length}' > length.txt;
 echo "qseqid" "sqeqid" "pident" "match_length" "mismatch" "gapopen" "qstart" "qend" "sstart" "send" "evalue" "bitscore" > rawblast.txt;
 ~/bin/ncbi-blast-2.2.30+/bin/blastn -db a.lines.fasta -query tempseq -perc_identity 75 -outfmt 6 >> rawblast.txt;
-Rscript linebyline.R;
+Rscript linebyline.R >> linebylineblastlog.txt;
 done;
