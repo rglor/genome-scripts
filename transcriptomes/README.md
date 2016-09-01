@@ -21,5 +21,5 @@ cutadapt -a AGATCGGAAGAGC -A AGATCGGAAGAGC -q 5 -m 1 -o Brain_trimmed_R1.fastq.g
 
 Step 5: run trinity with strand specificity 
 
-Trinity -seqType fq --max_memory 50G --left brain_pear.unassembled.forward.fastq --right brain_pear.unassembled.reverse.fastq --CPU 8 --full_cleanup --normalize_reads --min_kmer_cov 2 >> trinity.log
+Trinity -seqType fq --max_memory 50G --left Brain_trimmed_R1.fastq.gz --right Brain_trimmed_R2.fastq.gz -SS_lib_type RF --CPU 8 --full_cleanup --normalize_reads --min_kmer_cov 2 >> trinity.log
 
