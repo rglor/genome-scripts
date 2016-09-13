@@ -23,3 +23,13 @@ Step 5: run trinity with strand specificity
 ```
 Trinity -seqType fq --max_memory 50G --left Brain_trimmed_R1.fastq.gz --right Brain_trimmed_R2.fastq.gz -SS_lib_type RF --CPU 8 --full_cleanup --normalize_reads --min_kmer_cov 2 >> trinity.log
 ```
+
+Step 6: QC of transcriptome assembly! Mapping reads back - looking for at least 80% of reads to map back
+```
+bowtie2-build trinity_out_dir.Trinity.fasta Trinity.fasta
+
+/public/bowtie2-2.2.9/bowtie2 --local --no-unal -x trinity.fasta -q -1 Brain_trimmed_R1.fastq.gz -2 Brain_trimmed_R2.fastq.gz | /public/samtools-1.3.1/samtools view -Sb | samtools sort -no - - > bowtied2.nameSorted.bam
+```
+
+
+
