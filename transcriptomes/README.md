@@ -24,11 +24,21 @@ Step 5: run trinity with strand specificity
 Trinity -seqType fq --max_memory 50G --left Brain_trimmed_R1.fastq.gz --right Brain_trimmed_R2.fastq.gz -SS_lib_type RF --CPU 8 --full_cleanup --normalize_reads --min_kmer_cov 2 >> trinity.log
 ```
 
-Step 6: QC of transcriptome assembly! Mapping reads back - looking for at least 80% of reads to map back
+Step 6A: QC of transcriptome assembly: Mapping reads back to transcriptome
 ```
 bowtie2-build trinity_out_dir.Trinity.fasta Trinity.fasta
 
 /public/bowtie2-2.2.9/bowtie2 --local --no-unal -x trinity.fasta -q -1 Brain_trimmed_R1.fastq.gz -2 Brain_trimmed_R2.fastq.gz | /public/samtools-1.3.1/samtools view -Sb | samtools sort -no - - > bowtied2.nameSorted.bam
+
+ /public/trinityrnaseq-2.2.0/util/SAM_nameSorted_to_uniq_count_stats.pl bowtied2.nameSorted.bam 
+```
+From the Trinity instructions (link above): "A typical Trinity transcriptome assembly will have the vast majority of all reads mapping back to the assembly, and ~70-80% of the mapped fragments found mapped as proper pairs."
+
+Step 6B: QC of transcriptome assembly:
+```
+/public/ncbi-blast-2.2.30+/bin/makeblastdb -in uniprot_sprot.fasta -dbtype prot
+
+/public/ncbi-blast-2.2.30+/bin/blastx -query trinity_out_dir.Trinity.fasta -db uniprot_sprot.fasta -out blastx.outfmt6 -evalue 1e-20 -num_threads 6 -max_target_seqs 1 -outfmt 6
 ```
 
 
