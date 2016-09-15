@@ -1,5 +1,0 @@
-library(plyr)
-intable <- read.table("blastoutput.txt",header=TRUE)
-counts <- ddply(intable, .(intable$seqid, intable$scaffold_length), nrow)
-names(counts) <- c("seqid", "scaffold_length", "Freq")
-write.table(counts, "frequency_summary.txt")
