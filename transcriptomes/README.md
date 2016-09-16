@@ -38,8 +38,17 @@ Step 6B: QC of transcriptome assembly:
 ```
 /public/ncbi-blast-2.2.30+/bin/makeblastdb -in uniprot_sprot.fasta -dbtype prot
 
+#This step takes forever btw
 /public/ncbi-blast-2.2.30+/bin/blastx -query trinity_out_dir.Trinity.fasta -db uniprot_sprot.fasta -out blastx.outfmt6 -evalue 1e-20 -num_threads 6 -max_target_seqs 1 -outfmt 6
 ```
 
+Step 6C: QC of transcriptome assembly: Using BUSCO to look at presence of conserved orthologs
+```
+ python3 /public/BUSCO_v1.22/BUSCO_v1.22.py -o busco_brain -in trinity_out_dir.Trinity.fasta -l /public/BUSCO_v1.22/buscolib/vertebrata/ -m trans
+```
 
-
+Step 6D: QC of transcriptome assembly: E90N50 transcript contig length 
+```
+#First need to estimate transcript abundance. Doing this using RSEM based on http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4842274/
+/public/trinityrnaseq-2.2.0/util/align_and_estimate_abundance.pl --transcripts trinity_out_dir.Trinity.fasta --seqType fa --left Brain_trimmed_R1.fastq.gz --right Brain_trimmed_R2.fastq.gz --SS_lib_type RF --thread_count 4 --est_method RSEM --output_dir trin_rsem --aln_method bowtied2.nameSorted.bam --trinity_mode
+```
