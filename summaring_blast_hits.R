@@ -12,7 +12,11 @@ names(sseqcounts) <- c("seqid","start","end","scaffold_length")
 seqcounts <- rbind(qseqcounts,sseqcounts)
 sumseqcounts <- unique(seqcounts[,c("seqid","start","end","scaffold_length")])
 
-write.table(sumseqcounts, "list_of_selfhit_regions.txt",quote=FALSE, col.names=FALSE,row.names=FALSE)
+write.table(sumseqcounts, "list_of_selfhit_regions.txt",quote=FALSE, col.names=TRUE,row.names=FALSE)
 
 towrite <- ddply(sumseqcounts, .(sumseqcounts$seqid, sumseqcounts$scaffold_length), nrow)
-write.table(sumseqcounts,"frequency_of_selfhit_regions_by_scaffoled.txt",quote=FALSE, col.names=FALSE,row.names=FALSE)
+names(towrite) <- c("seqid","scaffold_length","no_selfhit_regions")
+
+write.table(towrite,"frequency_of_selfhit_regions_by_scaffold.txt",quote=FALSE, col.names=TRUE,row.names=FALSE)
+
+
