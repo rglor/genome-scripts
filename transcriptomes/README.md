@@ -47,8 +47,26 @@ Step 6C: QC of transcriptome assembly: Using BUSCO to look at presence of conser
  python3 /public/BUSCO_v1.22/BUSCO_v1.22.py -o busco_brain -in trinity_out_dir.Trinity.fasta -l /public/BUSCO_v1.22/buscolib/vertebrata/ -m trans
 ```
 
-Step 6D: QC of transcriptome assembly: E90N50 transcript contig length 
+Step 6D: QC of transcriptome assembly: The Transcriptome Contig Nx Statistic
+```
+/public/trinityrnaseq-2.2.0/util/TrinityStats.pl trinity_out_dir.Trinity.fasta > transcriptome_contig_nx_stat.log
+```
+
+Step 6E: QC of transcriptome assembly: Contig Ex90N50 Statistic and Ex90 Transcript Count
 ```
 #First need to estimate transcript abundance. Doing this using RSEM based on http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4842274/
 /public/trinityrnaseq-2.2.0/util/align_and_estimate_abundance.pl --transcripts trinity_out_dir.Trinity.fasta --seqType fq --left Brain_trimmed_R1.fastq.gz --right Brain_trimmed_R2.fastq.gz --SS_lib_type RF --thread_count 4 --est_method RSEM --output_dir trin_rsem --aln_method bowtie --trinity_mode --prep_reference
+
+#Constructing a matrix of counts and a matrix of normalized expression values for isoforms and genes
+/public/trinityrnaseq-2.2.0/util/abundance_estimates_to_matrix.pl --est_method RSEM --out_prefix trans_counts --name_sample_by_basedir trin_rsem/RSEM.isoforms.results
+
+/public/trinityrnaseq-2.2.0/util/abundance_estimates_to_matrix.pl --est_method RSEM --out_prefix gene_counts --name_sample_by_basedir trin_rsem/RSEM.genes.results
+
+#Counting numbers of expressed transcripts or genes
+/public/trinityrnaseq-2.2.0/util/misc/count_matrix_features_given_MIN_TPM_threshold.pl trans_counts.TPM.not_cross_norm > trans_matrix.TPM.not_cross_norm.counts_by_min_TPM
+
+/public/trinityrnaseq-2.2.0/util/misc/count_matrix_features_given_MIN_TPM_threshold.pl gene_counts.TPM.not_cross_norm > genes_matrix.TPM.not_cross_norm.counts_by_min_TPM
+
+#Follow the guidance and R-script at: https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Transcript-Quantification
+
 ```
