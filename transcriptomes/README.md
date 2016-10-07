@@ -30,16 +30,18 @@ bowtie2-build trinity_out_dir.Trinity.fasta Trinity.fasta
 
 /public/bowtie2-2.2.9/bowtie2 --local --no-unal -x trinity.fasta -q -1 Brain_trimmed_R1.fastq.gz -2 Brain_trimmed_R2.fastq.gz | /public/samtools-1.3.1/samtools view -Sb | samtools sort -no - - > bowtied2.nameSorted.bam
 
- /public/trinityrnaseq-2.2.0/util/SAM_nameSorted_to_uniq_count_stats.pl bowtied2.nameSorted.bam 
+/public/trinityrnaseq-2.2.0/util/SAM_nameSorted_to_uniq_count_stats.pl bowtied2.nameSorted.bam 
 ```
 From the Trinity instructions (link above): "A typical Trinity transcriptome assembly will have the vast majority of all reads mapping back to the assembly, and ~70-80% of the mapped fragments found mapped as proper pairs."
 
-Step 6B: QC of transcriptome assembly:
+Step 6B: QC of transcriptome assembly: Full-length transcript analysis for model and non-model organisms using BLAST+
 ```
 /public/ncbi-blast-2.2.30+/bin/makeblastdb -in uniprot_sprot.fasta -dbtype prot
 
 #This step takes forever btw
 /public/ncbi-blast-2.2.30+/bin/blastx -query trinity_out_dir.Trinity.fasta -db uniprot_sprot.fasta -out blastx.outfmt6 -evalue 1e-20 -num_threads 6 -max_target_seqs 1 -outfmt 6
+
+/public/trinityrnaseq-2.2.0/util/analyze_blastPlus_topHit_coverage.pl blastx.outfmt6 trinity_out_dir.Trinity.fasta uniprot_sprot.fast > analyze_blastPlus_topHit_coverage.log
 ```
 
 Step 6C: QC of transcriptome assembly: Using BUSCO to look at presence of conserved orthologs
@@ -68,5 +70,7 @@ Step 6E: QC of transcriptome assembly: Contig Ex90N50 Statistic and Ex90 Transcr
 /public/trinityrnaseq-2.2.0/util/misc/count_matrix_features_given_MIN_TPM_threshold.pl gene_counts.TPM.not_cross_norm > genes_matrix.TPM.not_cross_norm.counts_by_min_TPM
 
 #Follow the guidance and R-script at: https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Transcript-Quantification
+
+/public/trinityrnaseq-2.2.0/util/misc/contig_ExN50_statistic.pl trans_counts.counts.matrix trinity_out_dir.Trinity.fasta > ExN50.stats
 
 ```
