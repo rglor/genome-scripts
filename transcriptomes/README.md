@@ -71,6 +71,13 @@ Step 6E: QC of transcriptome assembly: Contig Ex90N50 Statistic and Ex90 Transcr
 
 #Follow the guidance and R-script at: https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Transcript-Quantification
 
-/public/trinityrnaseq-2.2.0/util/misc/contig_ExN50_statistic.pl trans_counts.counts.matrix trinity_out_dir.Trinity.fasta > ExN50.stats
+#Inside the trin_rsem folder, run the following commands to extract the columns of interest (because we are only working on one sample)
+cat RSEM.isoforms.results  | perl -lane 'print "$F[0]\t$F[5]";' >  RSEM.isoforms.results.mini_matrix
+cat RSEM.genes.results  | perl -lane 'print "$F[0]\t$F[5]";' >  RSEM.genes.results.mini_matrix
+
+#cd up to where the trinity.fasta file is
+/public/trinityrnaseq-2.2.0/util/misc/contig_ExN50_statistic.pl trin_rsem/RSEM.isoforms.results.mini_matrix trinity_out_dir.Trinity.fasta > ExN50_trans.stats
+
+/public/trinityrnaseq-2.2.0/util/misc/contig_ExN50_statistic.pl trin_rsem/RSEM.genes.results.mini_matrix trinity_out_dir.Trinity.fasta > ExN50_genes.stats
 
 ```
