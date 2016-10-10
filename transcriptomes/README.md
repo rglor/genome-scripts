@@ -83,5 +83,12 @@ cat RSEM.genes.results  | perl -lane 'print "$F[0]\t$F[5]";' >  RSEM.genes.resul
 /public/trinityrnaseq-2.2.0/util/misc/contig_ExN50_statistic.pl trin_rsem/RSEM.isoforms.results.mini_matrix trinity_out_dir.Trinity.fasta > ExN50_trans.stats
 
 /public/trinityrnaseq-2.2.0/util/misc/contig_ExN50_statistic.pl trin_rsem/RSEM.genes.results.mini_matrix trinity_out_dir.Trinity.fasta > ExN50_genes.stats
+```
 
+Step 6F: QC of transcriptome assembly: Compute DETONATE scores
+```
+#RSEM
+/public/detonate-1.11-precompiled/rsem-eval/rsem-eval-estimate-transcript-length-distribution trinity_out_dir.Trinity.fasta /public/detonate-1.11-precompiled/rsem-eval/true_transcript_length_distribution/anolis_distichus.txt
+
+/public/detonate-1.11-precompiled/rsem-eval/rsem-eval-calculate-score trin_rsem/bowtie.bam trinity_out_dir.Trinity.fasta sample_brain 200 --transcript-length-parameters /public/detonate-1.11-precompiled/rsem eval/true_transcript_length_distribution/anolis_distichus.txt --strand-specific -p 4 --bam --paired-end >& rsem_eval.log
 ```
