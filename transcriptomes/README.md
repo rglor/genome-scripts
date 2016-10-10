@@ -43,7 +43,7 @@ Step 6B: QC of transcriptome assembly: Full-length transcript analysis for model
 
 /public/trinityrnaseq-2.2.0/util/analyze_blastPlus_topHit_coverage.pl blastx.outfmt6 trinity_out_dir.Trinity.fasta uniprot_sprot.fast > analyze_blastPlus_topHit_coverage.log
 
-/public/trinityrnaseq-2.2.0/util/misc/blast_outfmt6_group_segments.pl blast.outfmt6 trinity_out_dir.Trinity.fasta uniprot_sprot.fasta > blast.outfmt6.grouped
+/public/trinityrnaseq-2.2.0/util/misc/blast_outfmt6_group_segments.pl blastx.outfmt6 trinity_out_dir.Trinity.fasta uniprot_sprot.fasta > blast.outfmt6.grouped
 ```
 
 Step 6C: QC of transcriptome assembly: Using BUSCO to look at presence of conserved orthologs
