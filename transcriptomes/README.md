@@ -87,8 +87,14 @@ cat RSEM.genes.results  | perl -lane 'print "$F[0]\t$F[5]";' >  RSEM.genes.resul
 
 Step 6F: QC of transcriptome assembly: Compute DETONATE scores
 ```
-#RSEM
+#RSEM (reference-free mode)
 /public/detonate-1.11-precompiled/rsem-eval/rsem-eval-estimate-transcript-length-distribution trinity_out_dir.Trinity.fasta /public/detonate-1.11-precompiled/rsem-eval/true_transcript_length_distribution/anolis_distichus.txt
 
-/public/detonate-1.11-precompiled/rsem-eval/rsem-eval-calculate-score trin_rsem/bowtie.bam trinity_out_dir.Trinity.fasta sample_brain 200 --transcript-length-parameters /public/detonate-1.11-precompiled/rsem eval/true_transcript_length_distribution/anolis_distichus.txt --strand-specific -p 4 --bam --paired-end >& rsem_eval.log
+/public/detonate-1.11-precompiled/rsem-eval/rsem-eval-calculate-score --paired-end --bam trin_rsem/bowtie.bam trinity_out_dir.Trinity.fasta sample_brain 200 --transcript-length-parameters /public/detonate-1.11-precompiled/rsem-eval/true_transcript_length_distribution/anolis_distichus.txt --strand-specific -p 4  >& rsem_eval.log
 ```
+
+Step 6G: QC of transcriptome assembly: TransRate
+```
+transrate --assembly trinity_out_dir.Trinity.fasta --left Brain_trimmed_R1.fastq.gz --right Brain_trimmed_R2.fastq.gz --threads 4
+```
+
