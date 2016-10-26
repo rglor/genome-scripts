@@ -23,10 +23,19 @@ Step 3: make a log directory
 mkdir logs
 ```
 
-Step 4: run cutadapt: discard reads <25 bp in length (otherwise Trinity will fail because its kmer = 25) and perform very gentle trimming (following http://journal.frontiersin.org/article/10.3389/fgene.2014.00013/full)
+Step 4A: run cutadapt: discard reads <25 bp in length (otherwise Trinity will fail because its kmer = 25) and perform very gentle trimming (following http://journal.frontiersin.org/article/10.3389/fgene.2014.00013/full)
 ```
+#PBS -N cutadapt.sh
+#PBS -l nodes=1:ppn=1:avx,mem=16000m,walltime=5:00:00
+#PBS -M alana.alexander@ku.edu
+#PBS -m abe
+#PBS -d /scratch/a499a400/anolis/transcriptome/Sample_Digestiv
+#PBS -j oe
+#PBS -o cutadapterror
+
 cutadapt -a AGATCGGAAGAGC -A AGATCGGAAGAGC -q 5 -m 25 -o Brain_trimmed_R1.fastq.gz -p Brain_trimmed_R2.fastq.gz Brain_ATCACG_R1.fastq.gz Brain_ATCACG_R2.fastq.gz > logs/cutadapt.log
 ```
+Step 4B: run fastqc again to make sure adaptors etc have been trimmed 
 
 Step 5: run trinity with strand specificity 
 ```
