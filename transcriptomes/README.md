@@ -14,6 +14,9 @@ cat ../anole_RNAseq_7June2016_run1/Project_Glor_Alexander/Sample_Digestiv/*R2* .
 ```
 
 Step 2: run fastqc
+```
+fastqc -k 6 *
+```
 
 Step 3: make a log directory
 ```
