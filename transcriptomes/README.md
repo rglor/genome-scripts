@@ -5,7 +5,13 @@ http://pasapipeline.github.io/#A_ComprehensiveTranscriptome
 http://informatics.fas.harvard.edu/best-practices-for-de-novo-transcritome-assembly-with-trinity.html
 
 
-Step 1: concatenate all the files for R1 together, and do the same thing for R2
+Step 1: concatenate all the files for R1 together, and do the same thing for R2 e.g.
+```
+cat ../anole_RNAseq_7June2016_run1/Project_Glor_Alexander/Sample_Digestiv/*R1* ../anole_RNAseq_19Aug2016_run2/Project_Glor_Alexander/Sample_Digestiv/*R1* >> Digestive_CTTGTA_R1.fastq.gz
+
+cat ../anole_RNAseq_7June2016_run1/Project_Glor_Alexander/Sample_Digestiv/*R2* ../anole_RNAseq_19Aug2016_run2/Project_Glor_Alexander/Sample_Digestiv/*R2* >> Digestive_CTTGTA_R2.fastq.gz
+
+```
 
 Step 2: run fastqc
 
