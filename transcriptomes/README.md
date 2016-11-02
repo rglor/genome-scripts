@@ -5,7 +5,7 @@ http://pasapipeline.github.io/#A_ComprehensiveTranscriptome
 http://informatics.fas.harvard.edu/best-practices-for-de-novo-transcritome-assembly-with-trinity.html
 
 
-Step 1: concatenate all the files for R1 together, and do the same thing for R2 e.g.
+Step 1 Concatenation: If your project was run on different lanes or at different times, you must fist use the cat command to concatenate  fastq formatted sequences obtained each individual tissue sample. During this concatenation phase, you will need to create separate concatenated files for each end of your paired end reads (e.g., one concatenated file for R1 and another for R2). In the example, below, we are concatenating from reads from Illumina runs that were done at two separate times (7June2016 and 19Aug2016) using the same library.
 ```
 cat ../anole_RNAseq_7June2016_run1/Project_Glor_Alexander/Sample_Digestiv/*R1* ../anole_RNAseq_19Aug2016_run2/Project_Glor_Alexander/Sample_Digestiv/*R1* >> Digestive_CTTGTA_R1.fastq.gz
 
@@ -13,17 +13,17 @@ cat ../anole_RNAseq_7June2016_run1/Project_Glor_Alexander/Sample_Digestiv/*R2* .
 
 ```
 
-Step 2: run fastqc
+Step 2 Preliminary QC: Preliminary QC of your sequences can be completed by applying the fastqc function (http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) to your fastq sequence files.
 ```
 fastqc -k 6 *
 ```
 
-Step 3: make a log directory
+Step 3 Start Logging: Make a log directory to store subsequent output.
 ```
 mkdir logs
 ```
 
-Step 4A: run cutadapt: discard reads <25 bp in length (otherwise Trinity will fail because its kmer = 25) and perform very gentle trimming (following http://journal.frontiersin.org/article/10.3389/fgene.2014.00013/full)
+Step 4A Trim Sequences: In this step, you will use the function cutadapt to (1) trim Illumina adapter sequences, (2) discard reads <25 bp in length (otherwise de novo assembly in Trinity will fail because its kmer = 25) and (3) perform gentle trimming of low quality basecalls. Recent studies suggest that trimming to a relatively low PHRED score of 5 results in transcriptomes that are considerably more complete that those that result from more aggressive quality trimming, without a commensurate increase in errors (http://journal.frontiersin.org/article/10.3389/fgene.2014.00013/full).
 ```
 #PBS -N cutadapt.sh
 #PBS -l nodes=1:ppn=1:avx,mem=16000m,walltime=5:00:00
@@ -35,7 +35,7 @@ Step 4A: run cutadapt: discard reads <25 bp in length (otherwise Trinity will fa
 
 cutadapt -a AGATCGGAAGAGC -A AGATCGGAAGAGC -q 5 -m 25 -o Brain_trimmed_R1.fastq.gz -p Brain_trimmed_R2.fastq.gz Brain_ATCACG_R1.fastq.gz Brain_ATCACG_R2.fastq.gz > logs/cutadapt.log
 ```
-Step 4B: run fastqc again to make sure adaptors etc have been trimmed 
+Step 4B QC of Trimmed Reads: Run fastqc again on your trimmed sequences to make sure the seqeunces still look good and adaptors have been trimmed. 
 
 Step 5: run trinity with strand specificity 
 ```
