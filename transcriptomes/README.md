@@ -7,7 +7,7 @@ http://informatics.fas.harvard.edu/best-practices-for-de-novo-transcritome-assem
 
 Step 1: Concatenate Fastq Files
 ======
-If your project was run on different lanes or at different times, you must first use the `cat` command to concatenate fastq formatted sequences obtained each individual tissue sample. During this concatenation phase, you will need to create separate concatenated files for each end of your paired end reads (e.g., one concatenated file for R1 and another for R2). In the example, below, we are concatenating from reads from Illumina runs that were done at two separate times (7June2016 and 19Aug2016) using the same library.
+Before starting any further analyses, it will be necessary to concatenate `fastq` formatted sequence output if your project was run across different lanes or at different times. This can be accomplished by using the `cat` command to create separate concatenated files for each end of your paired end reads (e.g., one concatenated file for R1 and another for R2). In the example, below, we are concatenating from reads from Illumina runs that were done at two separate times (7June2016 and 19Aug2016) from the same library.
 ```
 cat ../anole_RNAseq_7June2016_run1/Project_Glor_Alexander/Sample_Digestiv/*R1* ../anole_RNAseq_19Aug2016_run2/Project_Glor_Alexander/Sample_Digestiv/*R1* >> Digestive_CTTGTA_R1.fastq.gz
 
@@ -17,16 +17,16 @@ cat ../anole_RNAseq_7June2016_run1/Project_Glor_Alexander/Sample_Digestiv/*R2* .
 
 Step 2: Preliminary QC & Quality Trimming
 ======
-Preliminary QC of your sequences can be completed by applying the [`fastqc`](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) to your fastq sequence files. [`fastqc`](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) is a popular tool that "aims to provide a simple way to do some quality control checks on raw sequence data coming from high throughput sequencing pipelines." Carefully inspect output from [`fastqc`](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) because this is the main way that you are going to make sure that nothing is seriously wrong with your data before you delve into the time consuming series of analyses discussed below.
+Preliminary QC of your sequences can be completed by applying [`fastqc`](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) to your fastq sequence files. [`fastqc`](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) is a popular tool that "aims to provide a simple way to do some quality control checks on raw sequence data coming from high throughput sequencing pipelines." Carefully inspect output from [`fastqc`](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) because this is the main way that you are going to make sure that nothing is seriously wrong with your data before you delve into the time consuming series of analyses discussed below.
 ```
 fastqc -k 6 *
 ```
 
 If your sequences look OK after preliminary QC, its time to get your sequences ready for downstream analyses by trimming adaptors and eliminating low quality sequences and basecalls. Before going any further, you should start a log for subsequent output.
+
 ```
 mkdir logs
 ```
-
 Next use the function `cutadapt` to (1) trim Illumina adapter sequences, (2) discard reads <25 bp in length (otherwise *de novo* assembly in Trinity will fail because its kmer = 25) and (3) perform gentle trimming of low quality basecalls. Recent studies suggest that trimming to a relatively low PHRED score of 5 results in transcriptomes that are considerably more complete that those that result from more aggressive quality trimming, without a commensurate increase in errors ([MacManes 2014](http://journal.frontiersin.org/article/10.3389/fgene.2014.00013/full)).
 ```
 #PBS -N cutadapt.sh
@@ -62,8 +62,7 @@ mv $work_dir/trinity_out_dir.Trinity.fasta /scratch/glor_lab/rich/distichus_geno
 rm -rf $work_dir #Deletes working directory. This step is necessary because otherwise you will really gum up the node.
 
 ```
-
-Step 4: QC of Transcriptome
+Step 4: Assembled Transcriptome QC & Analyses
 ======
 We conduct several separate QC steps with the Trinity assembly, most of which are directly recommended by the authors of Trinity (the commands below are mostly copied directly from the Trinity github).
 
@@ -189,7 +188,15 @@ Step 4c: Assess Full-length Transcripts Relative to Reference Via BLAST+
 Step 4d: Assess Presence of Conserved Orthologs Via BUSCO
 ------
 ```
- python3 /public/BUSCO_v1.22/BUSCO_v1.22.py -o busco_brain -in trinity_out_dir.Trinity.fasta -l /public/BUSCO_v1.22/buscolib/vertebrata/ -m trans
+#PBS -N busco_dewlap.sh
+#PBS -l nodes=1:ppn=24:avx,mem=64000m,walltime=72:00:00
+#PBS -M glor@ku.edu
+#PBS -m abe
+#PBS -d /scratch/glor_lab/rich/distichus_genome_RNAseq/Dewlap
+#PBS -j oe
+#PBS -o busco_dewlap_error
+
+BUSCO.py -o busco_dewlap -i trinity_out_dir.Trinity.fasta -l ../vertebrata_odb9 -m tran
 ```
 
 Step 4e: Compute DETONATE scores
