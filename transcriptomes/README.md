@@ -145,7 +145,7 @@ Stats based on ALL transcript contigs:
 
 Step 5: Preliminary Estimates of Transcript Abundance and Transcriptome Ex
 ======
-Trinity's authors encourage use of the Ex statistic, a variant of Nx that incoporporations information on transcript frequency. In order to do this, we must first estimate transcript abundance using 'RSEM' ([Teng et al. 2016](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4842274/). We will be using `RSEM` via a script in the `Trinity` toolkit, but still need to be sure to place `RSEM` in our path before proceeding. You can run the following command to prepare the reference and run alignment and abundance estimation in interactive mode; it should only take 10 or 15 minutes to run, but will generate at least 1GB of files with `trinity_out_dir.Trinity.fasta.bowtie` or `trinity_out_dir.Trinity.fasta.RSEM` prefixes.
+N50 is a very important statistic in genomics, but does not capture all the information we might like to consider when assembling transcriptomes. For this reason, transcriptome QC also involves calculation of Ex, a variant of Nx that incoporporations information on transcript frequency. In order to calculate Ex, we must first estimate transcript abundance using 'RSEM' ([Teng et al. 2016](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4842274/). We will use `RSEM` via a script in the `Trinity` toolkit, but we still need to have `RSEM` in our path before proceeding. The following command will prepare the reference, generate an alignment and estimate transcript abundance in interactive mode; it should only take 10 or 15 minutes to run, but will generate at least 1GB of files with `trinity_out_dir.Trinity.fasta.bowtie` or `trinity_out_dir.Trinity.fasta.RSEM` prefixes.
 
 ```
 align_and_estimate_abundance.pl --transcripts trinity_out_dir.Trinity.fasta --seqType fq --left Testes_trimmed_R1.fastq.gz --right Testes_trimmed_R2.fastq.gz --SS_lib_type RF --thread_count 24 --est_method RSEM --output_dir trin_rsem --aln_method bowtie --trinity_mode --prep_reference
@@ -155,7 +155,7 @@ We should now be able to construct matrices containing counts and a matrix of no
 abundance_estimates_to_matrix.pl --est_method RSEM --out_prefix trans_counts --name_sample_by_basedir trin_rsem/RSEM.isoforms.results
 abundance_estimates_to_matrix.pl --est_method RSEM --out_prefix gene_counts --name_sample_by_basedir trin_rsem/RSEM.genes.results
 ```
-The resulting matrix won't take up too much space.
+The resulting matrix containing normalized expression values won't take up too much space.
 ```
 transcript_id   gene_id length  effective_length        expected_count  TPM     FPKM    IsoPct
 TRINITY_DN0_c0_g1_i1    TRINITY_DN0_c0_g1       224     64.93   2.00    0.80    1.08    100.00
@@ -169,7 +169,7 @@ TRINITY_DN100006_c0_g1_i1       TRINITY_DN100006_c0_g1  339     174.02  10.60   
 TRINITY_DN100006_c0_g1_i2       TRINITY_DN100006_c0_g1  292     128.12  2.40    0.48    0.66    23.53
 ```
 
-We can now obtain a summary of how many genes are expressed at different normalized expression values. This is useful for determining how many transcripts are present at different frequencies and potentially determining how many of your transcripts are very lowly expressed and possibly erroneous. Note that the required function is part of the `Trinity` toolkit, but the folder its in does not automatically install in your path when you load `Trinity` explaining the explicit directory information below (if you don't do this or ad the `misc` folder in the `Trinity` `util` folder to your path you will get an error).
+We can now obtain a summary of how many genes are expressed at different normalized expression values. This is useful for determining how many transcripts are present at different frequencies and potentially determining how many of your transcripts are very lowly expressed and possibly erroneous. Note that the required function is part of the `Trinity` toolkit, but the folder that this function is in is not included as part of your path when you add `Trinity` to your work environment on the cluster, which explains why I have used explicit directory infomration below (if you don't do this or ad the `misc` folder in the `Trinity` `util` folder to your path you will get an error).
 ```
 /tools/cluster/6.2/trinityrnaseq/2.2.0/util/misc/count_matrix_features_given_MIN_TPM_threshold.pl trans_counts.TPM.not_cross_norm > trans_matrix.TPM.not_cross_norm.counts_by_min_TPM
 
@@ -192,9 +192,21 @@ neg_min_tpm     num_features
 -1      284410
 0       341953
 ```
-We can also use this table to generate a plot of transcript frequencies that can be used to infer how many genes are present in sample (see R instructions)
 
-Follow the guidance and R-script at: https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Transcript-Quantification. Inside the trin_rsem folder, run the following commands to extract the columns of interest (because we are only working on one sample)
+We can use the table above to generate a plot of expression versus numbers of transcripts; such plots can be useful for figuring out how many well-expressed genes are present in your sample. Instructions for going this process in R are available via `Trinity` and are replicated below.
+
+```
+setwd("~/")
+data = read.table("Dewlap_genes_matrix.TPM.not_cross_norm.counts_by_min_TPM", header=T)
+plot(data, xlim=c(-100,0), ylim=c(0,100000), t='b')
+filt_data = data[data[,1] > -100 & data[,1] < -10,]
+fit = lm(filt_data[,2] ~ filt_data[,1])
+print(fit)
+abline(fit, col='green', lwd=3)
+
+
+
+Inside the trin_rsem folder, run the following commands to extract the columns of interest (because we are only working on one sample)
 ```
 cat RSEM.isoforms.results  | perl -lane 'print "$F[0]\t$F[5]";' >  RSEM.isoforms.results.mini_matrix
 cat RSEM.genes.results  | perl -lane 'print "$F[0]\t$F[5]";' >  RSEM.genes.results.mini_matrix
