@@ -7,7 +7,7 @@ http://informatics.fas.harvard.edu/best-practices-for-de-novo-transcritome-assem
 
 Step 1: Concatenate Fastq Files
 ======
-Before starting any further analyses, it will be necessary to concatenate `fastq` formatted sequence output if your project was run across different lanes or at different times. This can be accomplished by using the `cat` command to create separate concatenated files for each end of your paired end reads (e.g., one concatenated file for R1 and another for R2). In the example, below, we are concatenating from reads from Illumina runs that were done at two separate times (7June2016 and 19Aug2016) from the same library.
+Before starting, it may be necessary to concatenate `fastq` formatted sequence output if your transcriptome project was run across different lanes or at different times. This can be accomplished by using the `cat` command to create separate concatenated files for each end of your paired end reads (e.g., one concatenated file for R1 and another for R2). In the example, below, we are concatenating from reads from Illumina runs that were done at two separate times (7June2016 and 19Aug2016) from the same library.
 ```
 cat ../anole_RNAseq_7June2016_run1/Project_Glor_Alexander/Sample_Digestiv/*R1* ../anole_RNAseq_19Aug2016_run2/Project_Glor_Alexander/Sample_Digestiv/*R1* >> Digestive_CTTGTA_R1.fastq.gz
 
@@ -17,7 +17,7 @@ cat ../anole_RNAseq_7June2016_run1/Project_Glor_Alexander/Sample_Digestiv/*R2* .
 
 Step 2: Preliminary QC & Quality Trimming
 ======
-Preliminary QC of your sequences can be completed by applying [`fastqc`](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) to your fastq sequence files. [`fastqc`](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) is a popular tool that "aims to provide a simple way to do some quality control checks on raw sequence data coming from high throughput sequencing pipelines." Carefully inspect output from [`fastqc`](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) because this is the main way that you are going to make sure that nothing is seriously wrong with your data before you delve into the time consuming series of analyses discussed below.
+Preliminary QC of your sequences can be completed by applying [`fastqc`](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) to your fastq sequence files. [`fastqc`](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) is a popular tool that "aims to provide a simple way to do some quality control checks on raw sequence data coming from high throughput sequencing pipelines." Carefully inspect the `html` output from [`fastqc`](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) because this is the main way that you are going to make sure that nothing is seriously wrong with your data before you delve into the time consuming series of analyses discussed below.
 ```
 fastqc -k 6 *
 ```
@@ -43,7 +43,7 @@ After trimming is complete, use `fastqc` on the resulting files to check that ad
 
 Step 3: *de novo* Assembly with Trinity
 ======
-After you've conducted the basic QC steps described above, you're ready to do your fist *de novo* assembly. We use the `Trinity` package for *de novo* transcriptome assembly. Because *de novo* assembly with `Trinity` requires a large amount of computer memory (~1GB RAM/1 million sequence reads) and generates a large number of files (~900,000) you should be sure that your quotas are able to accommodate these requirements prior to initiating assembly. In the script below, we will run *de novo* assembly using a high memory node via the `bigm` queue; moreover, hundreds of thousands of files that are temporarily required during the assembly process are stored on the node running the analyses (`file=200gb') rather than in the scratch space, which has stricter constraints on file size and number. Importantly, all of the temporary files generated during the course of the `Trinity` analyses are deleted at the end of the script to avoid gumming up the cluster's hard drives.
+After you've conducted the basic QC steps described above, you're ready to do your first *de novo* assembly. We use the `Trinity` package for *de novo* transcriptome assembly. Because *de novo* assembly with `Trinity` requires a large amount of computer memory (~1GB RAM/1 million sequence reads) and generates a large number of files (~900,000) you should be sure that your quotas are able to accommodate these requirements prior to initiating assembly. In the script below, we will run *de novo* assembly using a high memory node via the `bigm` queue; moreover, hundreds of thousands of files that are temporarily required during the assembly process are stored on the node running the analyses (`file=200gb`) rather than in the scratch space, which has stricter constraints on file size and number. Importantly, all of the temporary files generated during the course of the `Trinity` analyses are deleted at the end of the script to avoid gumming up the cluster's hard drives.
 
 ```
 #PBS -N trinity_heart
@@ -59,12 +59,12 @@ mkdir $work_dir #Generates working directory for temporary file storage.
 cp /scratch/glor_lab/rich/distichus_genome_RNAseq/Heart/Heart_trimmed* $work_dir #Copies sequence files for assembly to new working directory on node doing analyses.
 Trinity -seqType fq --max_memory 512G --left $work_dir/Heart_trimmed_R1.fastq.gz --right $work_dir/Heart_trimmed_R2.fastq.gz -SS_lib_type RF --CPU 24 --full_cleanup --normalize_reads --min_kmer_cov 2 --output $work_dir/trinity_out_dir >> trinity.log
 mv $work_dir/trinity_out_dir.Trinity.fasta /scratch/glor_lab/rich/distichus_genome_RNAseq/Heart/ #Moves files from node doing analyses to scratch drive.
-rm -rf $work_dir #Deletes working directory. This step is necessary because otherwise you will really gum up the node.
+rm -rf $work_dir
 
 ```
-Step 4: Assembled Transcriptome QC & Analyses
+Step 4: Basic Transcriptome QC
 ======
-We conduct several separate QC steps with the Trinity assembly, most of which are directly recommended by the authors of Trinity (the commands below are mostly copied directly from the Trinity github).
+We will conduct several QC analyses with the Trinity assembly, most of which are directly recommended by the authors of Trinity (the commands below are mostly copied directly from the Trinity github). Our steps include: mapping reads to assembled transcriptome
 
 Step 4a: Mapping Reads to Assembled Transcriptome
 ------
@@ -96,7 +96,7 @@ right_only      181046  0.56
 Total aligned rnaseq fragments: 32254986
 ```
 
-Step 4b: Transcriptome Contig Statistics (Nx  and ExNy)
+Step 4b: Transcriptome Nx Statistic
 ------
 In this step, we calculate basic statistics to assess contig assembly. Nx is the transcriptome equivalent of N50. 
 
@@ -143,22 +143,57 @@ Stats based on ALL transcript contigs:
         Total assembled bases: 194318977
 ```
 
+Step 5: Preliminary Estimates of Transcript Abundance and Transcriptome Ex
+======
 Trinity's authors encourage use of the Ex statistic, a variant of Nx that incoporporations information on transcript frequency. In order to do this, we must first estimate transcript abundance using 'RSEM' ([Teng et al. 2016](http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4842274/). We will be using `RSEM` via a script in the `Trinity` toolkit, but still need to be sure to place `RSEM` in our path before proceeding. You can run the following command to prepare the reference and run alignment and abundance estimation in interactive mode; it should only take 10 or 15 minutes to run, but will generate at least 1GB of files with `trinity_out_dir.Trinity.fasta.bowtie` or `trinity_out_dir.Trinity.fasta.RSEM` prefixes.
 
 ```
 align_and_estimate_abundance.pl --transcripts trinity_out_dir.Trinity.fasta --seqType fq --left Testes_trimmed_R1.fastq.gz --right Testes_trimmed_R2.fastq.gz --SS_lib_type RF --thread_count 24 --est_method RSEM --output_dir trin_rsem --aln_method bowtie --trinity_mode --prep_reference
 ```
-We then construct matrices containing counts and a matrix of normalized expression values for isoforms (with `trans_counts` prefix)  and genes (with `gene_counts` prefix). Normalized values will be calculated as transcripts per million transcripts (TPM). Running these perl scripts included in the `Trinity` toolkit should only take a few seconds in interactive mode.
+We should now be able to construct matrices containing counts and a matrix of normalized expression values for isoforms (with `trans_counts` prefix)  and genes (with `gene_counts` prefix). Normalized values will be calculated as transcripts per million transcripts (TPM) and FPKM. Running these perl scripts included in the `Trinity` toolkit should only take a few seconds in interactive mode.
 ```
 abundance_estimates_to_matrix.pl --est_method RSEM --out_prefix trans_counts --name_sample_by_basedir trin_rsem/RSEM.isoforms.results
 abundance_estimates_to_matrix.pl --est_method RSEM --out_prefix gene_counts --name_sample_by_basedir trin_rsem/RSEM.genes.results
 ```
-Next we are going to count numbers of expressed transcripts or genes. Note that the required function is part of the `Trinity` toolkit, but the folder its in does not automatically install in your path when you load `Trinity` explaining the explicit directory information below (if you don't do this or ad the `misc` folder in the `Trinity` `util` folder to your path you will get an error).
+The resulting matrix won't take up too much space.
+```
+transcript_id   gene_id length  effective_length        expected_count  TPM     FPKM    IsoPct
+TRINITY_DN0_c0_g1_i1    TRINITY_DN0_c0_g1       224     64.93   2.00    0.80    1.08    100.00
+TRINITY_DN100000_c0_g1_i1       TRINITY_DN100000_c0_g1  237     76.47   5.71    1.93    2.62    100.00
+TRINITY_DN100000_c0_g2_i1       TRINITY_DN100000_c0_g2  237     76.47   2.29    0.77    1.05    100.00
+TRINITY_DN100001_c0_g1_i1       TRINITY_DN100001_c0_g1  265     102.34  0.00    0.00    0.00    0.00
+TRINITY_DN100002_c0_g1_i1       TRINITY_DN100002_c0_g1  367     201.70  4.50    0.58    0.78    100.00
+TRINITY_DN100002_c0_g2_i1       TRINITY_DN100002_c0_g2  367     201.70  4.50    0.58    0.78    100.00
+TRINITY_DN100004_c0_g1_i1       TRINITY_DN100004_c0_g1  269     106.12  3.00    0.73    0.99    100.00
+TRINITY_DN100006_c0_g1_i1       TRINITY_DN100006_c0_g1  339     174.02  10.60   1.57    2.14    76.47
+TRINITY_DN100006_c0_g1_i2       TRINITY_DN100006_c0_g1  292     128.12  2.40    0.48    0.66    23.53
+```
+
+We can now obtain a summary of how many genes are expressed at different normalized expression values. This is useful for determining how many transcripts are present at different frequencies and potentially determining how many of your transcripts are very lowly expressed and possibly erroneous. Note that the required function is part of the `Trinity` toolkit, but the folder its in does not automatically install in your path when you load `Trinity` explaining the explicit directory information below (if you don't do this or ad the `misc` folder in the `Trinity` `util` folder to your path you will get an error).
 ```
 /tools/cluster/6.2/trinityrnaseq/2.2.0/util/misc/count_matrix_features_given_MIN_TPM_threshold.pl trans_counts.TPM.not_cross_norm > trans_matrix.TPM.not_cross_norm.counts_by_min_TPM
 
 /tools/cluster/6.2/trinityrnaseq/2.2.0/util/misc/count_matrix_features_given_MIN_TPM_threshold.pl gene_counts.TPM.not_cross_norm > genes_matrix.TPM.not_cross_norm.counts_by_min_TPM
 ```
+The resulting matrix of numbers should look something like the table below, where the first column indicates normalized expression and the second column indicates the number of transcripts with that level of expression. In the table below, for exampe, 11,904 transcripts are expessed with a TPM of 5 whereas 341953 are expressed with a TPM of 1. 
+
+```
+neg_min_tpm     num_features
+-108409 1
+-51764  2
+-35403  3
+-32386  4
+-21368  5
+...   ...
+-5      11904
+-4      16134
+-3      26908
+-2      78673
+-1      284410
+0       341953
+```
+We can also use this table to generate a plot of transcript frequencies that can be used to infer how many genes are present in sample (see R instructions)
+
 Follow the guidance and R-script at: https://github.com/trinityrnaseq/trinityrnaseq/wiki/Trinity-Transcript-Quantification. Inside the trin_rsem folder, run the following commands to extract the columns of interest (because we are only working on one sample)
 ```
 cat RSEM.isoforms.results  | perl -lane 'print "$F[0]\t$F[5]";' >  RSEM.isoforms.results.mini_matrix
@@ -170,8 +205,23 @@ Then move back to the folder containing the trinity.fasta file and run the follo
 
 /tools/cluster/6.2/trinityrnaseq/2.2.0/util/misc/contig_ExN50_statistic.pl trin_rsem/RSEM.genes.results.mini_matrix trinity_out_dir.Trinity.fasta > ExN50_genes.stats
 ```
+Step 6: Assess Presence of Conserved Orthologs Via BUSCO
+------
+```
+#PBS -N busco_dewlap.sh
+#PBS -l nodes=1:ppn=24:avx,mem=64000m,walltime=72:00:00
+#PBS -M glor@ku.edu
+#PBS -m abe
+#PBS -d /scratch/glor_lab/rich/distichus_genome_RNAseq/Dewlap
+#PBS -j oe
+#PBS -o busco_dewlap_error
 
-Step 4c: Assess Full-length Transcripts Relative to Reference Via BLAST+
+BUSCO.py -o busco_dewlap -i trinity_out_dir.Trinity.fasta -l ../vertebrata_odb9 -m tran
+```
+
+
+
+Step 5: Assess Full-length Transcripts Relative to Reference Via BLAST+
 ------
 ```
 /public/ncbi-blast-2.2.30+/bin/makeblastdb -in uniprot_sprot.fasta -dbtype prot
@@ -185,19 +235,6 @@ Step 4c: Assess Full-length Transcripts Relative to Reference Via BLAST+
 /public/trinityrnaseq-2.2.0/util/misc/blast_outfmt6_group_segments.tophit_coverage.pl blast.outfmt6.grouped > analyze_groupsegments_topHit_coverage.log
 ```
 
-Step 4d: Assess Presence of Conserved Orthologs Via BUSCO
-------
-```
-#PBS -N busco_dewlap.sh
-#PBS -l nodes=1:ppn=24:avx,mem=64000m,walltime=72:00:00
-#PBS -M glor@ku.edu
-#PBS -m abe
-#PBS -d /scratch/glor_lab/rich/distichus_genome_RNAseq/Dewlap
-#PBS -j oe
-#PBS -o busco_dewlap_error
-
-BUSCO.py -o busco_dewlap -i trinity_out_dir.Trinity.fasta -l ../vertebrata_odb9 -m tran
-```
 
 Step 4e: Compute DETONATE scores
 ------
