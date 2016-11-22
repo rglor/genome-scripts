@@ -193,20 +193,28 @@ neg_min_tpm     num_features
 0       341953
 ```
 
-We can use the table above to generate a plot of expression versus numbers of transcripts; such plots can be useful for figuring out how many well-expressed genes are present in your sample. Instructions for going this process in R are available via `Trinity` and are replicated below.
+We can use the table above to generate a plot of expression versus numbers of transcripts; such plots can be useful for figuring out how many genes are well-supported by your expression data. Instructions for going this process in R are available via `Trinity` and are replicated below.
 
 ```
-setwd("~/")
 data = read.table("Dewlap_genes_matrix.TPM.not_cross_norm.counts_by_min_TPM", header=T)
 plot(data, xlim=c(-100,0), ylim=c(0,100000), t='b')
 filt_data = data[data[,1] > -100 & data[,1] < -10,]
 fit = lm(filt_data[,2] ~ filt_data[,1])
 print(fit)
 abline(fit, col='green', lwd=3)
+```
 
+The y-intercept of this fitted line, which is ~2,500 in the case of the sample used here, can be interpreted as a somewhat more reasonable estimate of the genes expressed in a sample than prior estimates based on the number of assembled transcripts.
 
+```
+Call:
+lm(formula = filt_data[, 2] ~ filt_data[, 1])
 
-Inside the trin_rsem folder, run the following commands to extract the columns of interest (because we are only working on one sample)
+Coefficients:
+   (Intercept)  filt_data[, 1]  
+       2493.53           26.55
+```
+In addition to using the transcript abundance data to generate this rough estimate of how many genes are well-supported by your data, we will also generate the Ex90N50 value which is calculated in the same manner as N50, but only includes samples above some threshold of transcript frequency. For example, E90 includes only those samples included in the 90% transcript frequency. To generate Ex90N50 estimates, go into `trin_rsem folder`, and run the following commands to extract the columns of interest (because we are only working on one sample)
 ```
 cat RSEM.isoforms.results  | perl -lane 'print "$F[0]\t$F[5]";' >  RSEM.isoforms.results.mini_matrix
 cat RSEM.genes.results  | perl -lane 'print "$F[0]\t$F[5]";' >  RSEM.genes.results.mini_matrix
@@ -214,11 +222,37 @@ cat RSEM.genes.results  | perl -lane 'print "$F[0]\t$F[5]";' >  RSEM.genes.resul
 Then move back to the folder containing the trinity.fasta file and run the following commands.
 ```
 /tools/cluster/6.2/trinityrnaseq/2.2.0/util/misc/contig_ExN50_statistic.pl trin_rsem/RSEM.isoforms.results.mini_matrix trinity_out_dir.Trinity.fasta > ExN50_trans.stats
-
 /tools/cluster/6.2/trinityrnaseq/2.2.0/util/misc/contig_ExN50_statistic.pl trin_rsem/RSEM.genes.results.mini_matrix trinity_out_dir.Trinity.fasta > ExN50_genes.stats
 ```
+The resulting table (below) indicates that 90% of the transcripts are accounted for by 218,896 transcripts with an N50 of 896.
+
+```
+#E      min_expr        E-N50   num_transcripts
+E10     108408.66       354     1
+E16     51763.51        1902    2
+E19     35391.32        1658    3
+E21     24329.59        1902    4
+E24     21351.73        1902    5
+E25     16020.57        1902    6
+E27     15276.74        1902    7
+...
+E90     0.89    896     218896
+E91     0.85    869     230431
+E92     0.81    846     242485
+E93     0.77    822     255135
+E94     0.73    799     268501
+E95     0.68    778     282737
+E96     0.62    762     298121
+E97     0.56    745     315158
+E98     0.49    730     334326
+E99     0.39    721     356997
+E100    0       742     439159
+```
+
 Step 6: Assess Presence of Conserved Orthologs Via BUSCO
-------
+======
+One important benchmark for a transcriptome is the number genes found in that transcriptome that are expected based on prior work with transcriptomes of other organisms. The simplest way to do this is to use BUSCO, which can compare your assembled transcriptome to conserved orthologues found in other organisms. This operation will take at 6+ hours to complete.
+
 ```
 #PBS -N busco_dewlap.sh
 #PBS -l nodes=1:ppn=24:avx,mem=64000m,walltime=72:00:00
@@ -229,6 +263,15 @@ Step 6: Assess Presence of Conserved Orthologs Via BUSCO
 #PBS -o busco_dewlap_error
 
 BUSCO.py -o busco_dewlap -i trinity_out_dir.Trinity.fasta -l ../vertebrata_odb9 -m tran
+```
+After running this operation, you should find a simple summary of your data (`short_summary_busco_dewlap.txt`) in a folder called `run_busco_name` that will tell you how many complete BUSCOs were recovered in your dataset.
+```
+        1804    Complete BUSCOs (C)
+        1006    Complete and single-copy BUSCOs (S)
+        798     Complete and duplicated BUSCOs (D)
+        435     Fragmented BUSCOs (F)
+        347     Missing BUSCOs (M)
+        2586    Total BUSCO groups searched
 ```
 
 
