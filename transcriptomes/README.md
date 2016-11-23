@@ -64,7 +64,7 @@ rm -rf $work_dir
 ```
 Step 4: Basic Transcriptome QC
 ======
-We will conduct several QC analyses with the Trinity assembly, most of which are directly recommended by the authors of Trinity (the commands below are mostly copied directly from the Trinity github). Our steps include: mapping reads to assembled transcriptome
+We will conduct several QC analyses with the Trinity assembly, most of which are directly recommended by the authors of Trinity. In this step, we will [first map our reads back to the assembly](https://github.com/trinityrnaseq/trinityrnaseq/wiki/RNA-Seq-Read-Representation-by-Trinity-Assembly) with the expectation that most (>70%) will be successfully mapped. We will then [calculate our transriptome N50](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Transcriptome%20Contig%20Nx%20and%20ExN50%20stats). 
 
 Step 4a: Mapping Reads to Assembled Transcriptome
 ------
@@ -249,10 +249,13 @@ E99     0.39    721     356997
 E100    0       742     439159
 ```
 
-Step 6: Assess Presence of Conserved Orthologs Via BUSCO
+Step 6: Assess Full-length Transcript Coverage 
 ======
-One important benchmark for a transcriptome is the number genes found in that transcriptome that are expected based on prior work with transcriptomes of other organisms. The simplest way to do this is to use BUSCO, which can compare your assembled transcriptome to conserved orthologues found in other organisms. This operation will take at 6+ hours to complete.
+One important benchmark for transcriptome quality involves asking how many assembled transcripts correspond with full-length transcripts in other organisms. Such counts can be generated in several ways, most frequently using `blastx` and `BUSCO` to compare transcripts to a database of the users choosing or a curated database of conserved orthologues, respectively. This operation will take at 20+ hours to complete.
 
+Step 6a: Benchmarking Universal Single-Copy Orthologs (BUSCO)
+------
+"BUSCO v2 provides quantitative measures for the assessment of genome assembly, gene set, and transcriptome completeness, based on evolutionarily-informed expectations of gene content from near-universal single-copy orthologs selected from OrthoDB v9." For more about BUSCO visit the [project's website](http://busco.ezlab.org/) or read the paper reporting the method ([Simão et al. 2015](http://dx.doi.org/10.1093/bioinformatics/btv351)).
 ```
 #PBS -N busco_dewlap.sh
 #PBS -l nodes=1:ppn=24:avx,mem=64000m,walltime=72:00:00
@@ -274,20 +277,17 @@ After running this operation, you should find a simple summary of your data (`sh
         2586    Total BUSCO groups searched
 ```
 
-
-
-Step 5: Assess Full-length Transcripts Relative to Reference Via BLAST+
+Step 6b: Assess Full-length Transcripts Relative to Reference Via BLAST+
 ------
+A second approach to determining how many assembled transcripts correspond with transcripts in previously sequenced datasets is to use BLAST+ to queuery your transcripts against a database of previously identified transcripts. If you do not have a reference transcriptome or proteome from your focal species (or anything close to your species), you can conduct this comparative analysis using a more general reference from SwissProt or elsewhere. The Trinity GitHub [provides details on conducting this analysis](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Counting-Full-Length-Trinity-Transcripts), which are revised below for use at the KU ACF.
+
 ```
-/public/ncbi-blast-2.2.30+/bin/makeblastdb -in uniprot_sprot.fasta -dbtype prot
+makeblastdb -in ../uniprot_sprot.fasta -dbtype prot
+blastx -query trinity_out_dir.Trinity.fasta -db uniprot_sprot.fasta -out blastx.outfmt6 -evalue 1e-20 -num_threads 6 -max_target_seqs 1 -outfmt 6
+analyze_blastPlus_topHit_coverage.pl blastx.outfmt6 trinity_out_dir.Trinity.fasta uniprot_sprot.fast > analyze_blastPlus_topHit_coverage.log
+blast_outfmt6_group_segments.pl blastx.outfmt6 trinity_out_dir.Trinity.fasta uniprot_sprot.fasta > blast.outfmt6.grouped
+blast_outfmt6_group_segments.tophit_coverage.pl blast.outfmt6.grouped > analyze_groupsegments_topHit_coverage.log
 
-/public/ncbi-blast-2.2.30+/bin/blastx -query trinity_out_dir.Trinity.fasta -db uniprot_sprot.fasta -out blastx.outfmt6 -evalue 1e-20 -num_threads 6 -max_target_seqs 1 -outfmt 6
-
-/public/trinityrnaseq-2.2.0/util/analyze_blastPlus_topHit_coverage.pl blastx.outfmt6 trinity_out_dir.Trinity.fasta uniprot_sprot.fast > analyze_blastPlus_topHit_coverage.log
-
-/public/trinityrnaseq-2.2.0/util/misc/blast_outfmt6_group_segments.pl blastx.outfmt6 trinity_out_dir.Trinity.fasta uniprot_sprot.fasta > blast.outfmt6.grouped
-
-/public/trinityrnaseq-2.2.0/util/misc/blast_outfmt6_group_segments.tophit_coverage.pl blast.outfmt6.grouped > analyze_groupsegments_topHit_coverage.log
 ```
 
 
