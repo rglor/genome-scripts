@@ -1,8 +1,11 @@
-Loosely following the guidelines at:
-http://sfg.stanford.edu/quality.html
-https://github.com/trinityrnaseq/trinityrnaseq/wiki/Running%20Trinity
-http://pasapipeline.github.io/#A_ComprehensiveTranscriptome
-http://informatics.fas.harvard.edu/best-practices-for-de-novo-transcritome-assembly-with-trinity.html
+Introduction to RNAseq Assembly and Analysis
+======
+Methods for RNAseq assembly and analysis are not reasonably mature, with several established assemblers and associated analytical pipelines. Some aspects of these pipelines are shared by more standard methods for analysis of DNA sequence data. However, working with RNAseq data also presents a number of challenges that may be unfamiliar to researchers who have worked primarily with DNA. One of these challenges is the fact that most genes appear to produce multiple transcript isoforms ([Pan et al. 2008](http://dx.doi.org/10.1038/ng.259)); this presents a challenge to assembly algorithms and results in a far greater diversity of transcripts than one might expect based on estimates of gene diversity. Assemblers and associated applications tend to deal with this challenge by attempting to diagnose clusters of isoforms that are derived from the same gene, but know this will be impossible to do without error given the known difficulty with even distinguishing paralogous copies of the same gene. A second challenge is the fact that we expect RNAseq reads to be present in proportion to their abundance in the tissue from which we obtained RNA; for this reason, most assembly pipelines integrate read frequency data in the QC process.
+
+The KU BI Pipeline
+======
+The pipeline below is derived primarily from the recommendations of authors of the most popular de novo assembler for RNAseq data: Trinity. [The Trinity github](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Running%20Trinity) includes detailed instructions not only for using the core Trinity assembler, but also for various QC processes associated with this assembler. The main alternative to Trinity involves the use of multiple k-mer assemblers; while Trinity focuses exclusively on 25 k-mer assembly, alternative methods such as trans-ABYSS and trans-SOAP allow users to hierarchically assess the performance of alternative k-mer sizes. While these multiple k-mer approaches can often improve assembly performance, recent compartive studies suggest that the simpler strategy used by Trinity is nearly as effective. Other pipelines available online may also deviate from our recommended Trinity pipeline in one way or another. For example, the [Harvard Pipeline](http://informatics.fas.harvard.edu/best-practices-for-de-novo-transcritome-assembly-with-trinity.html) includes some additional steps for removal of low frequency transcripts or improperly paired reads that we have found result in somewhat cleaner assemblies with fewer transcripts. We encourage anyone working with RNAseq to explore these alternatives. Other places to learn more include the [Simple Fools Guide](http://sfg.stanford.edu/quality.html) and the [PASA pipeline](http://pasapipeline.github.io/#A_ComprehensiveTranscriptome).
+
 
 
 Step 1: Concatenate Fastq Files
@@ -27,7 +30,7 @@ If your sequences look OK after preliminary QC, its time to get your sequences r
 ```
 mkdir logs
 ```
-Next use the function `cutadapt` to (1) trim Illumina adapter sequences, (2) discard reads <25 bp in length (otherwise *de novo* assembly in Trinity will fail because its kmer = 25) and (3) perform gentle trimming of low quality basecalls. Recent studies suggest that trimming to a relatively low PHRED score of 5 results in transcriptomes that are considerably more complete that those that result from more aggressive quality trimming, without a commensurate increase in errors ([MacManes 2014](http://journal.frontiersin.org/article/10.3389/fgene.2014.00013/full)).
+Next use the function `cutadapt` to (1) trim Illumina adapter sequences, (2) discard reads <25 bp in length (otherwise *de novo* assembly in Trinity will fail because its kmer = 25) and (3) perform gentle trimming of low quality basecalls. Recent studies suggest that trimming to a relatively low PHRED score of 5 results in transcriptomes that are considerably more complete than those that result from more aggressive quality trimming, without a commensurate increase in errors ([MacManes 2014](http://journal.frontiersin.org/article/10.3389/fgene.2014.00013/full)).
 ```
 #PBS -N cutadapt.sh
 #PBS -l nodes=1:ppn=1:avx,mem=16000m,walltime=5:00:00
@@ -43,7 +46,7 @@ After trimming is complete, use `fastqc` on the resulting files to check that ad
 
 Step 3: *de novo* Assembly with Trinity
 ======
-After you've conducted the basic QC steps described above, you're ready to do your first *de novo* assembly. We use the `Trinity` package for *de novo* transcriptome assembly. Because *de novo* assembly with `Trinity` requires a large amount of computer memory (~1GB RAM/1 million sequence reads) and generates a large number of files (~900,000) you should be sure that your quotas are able to accommodate these requirements prior to initiating assembly. In the script below, we will run *de novo* assembly using a high memory node via the `bigm` queue; moreover, hundreds of thousands of files that are temporarily required during the assembly process are stored on the node running the analyses (`file=200gb`) rather than in the scratch space, which has stricter constraints on file size and number. Importantly, all of the temporary files generated during the course of the `Trinity` analyses are deleted at the end of the script to avoid gumming up the cluster's hard drives.
+After you've conducted the basic QC steps described above, you're ready to do your first *de novo* assembly. We use the `Trinity` package for *de novo* transcriptome assembly. Because *de novo* assembly with `Trinity` requires a large amount of computer memory (~1GB RAM/1 million sequence reads) and generates a large number of files (~900,000) you should be sure that your quotas are able to accommodate these requirements prior to initiating assembly. In the script below, we will run *de novo* assembly using a high memory node via the `bigm` queue; moreover, hundreds of thousands of files that are temporarily required during the assembly process are stored on the node running the analyses (`file=200gb`) rather than in the scratch space, which has stricter constraints on file size and number. Importantly, all of the temporary files generated during the course of the `Trinity` analyses are deleted at the end of the script to avoid gumming up the cluster's hard drives. The main output from `Trinity` will be a large (e.g., 400+ MB for a dataset with 40 million reads) `fasta` file called `trinity_out_dir.Trinity.fasta` that will include each of your assembled transcripts. 
 
 ```
 #PBS -N trinity_heart
@@ -64,11 +67,11 @@ rm -rf $work_dir
 ```
 Step 4: Basic Transcriptome QC
 ======
-We will conduct several QC analyses with the Trinity assembly, most of which are directly recommended by the authors of Trinity. In this step, we will [first map our reads back to the assembly](https://github.com/trinityrnaseq/trinityrnaseq/wiki/RNA-Seq-Read-Representation-by-Trinity-Assembly) with the expectation that most (>70%) will be successfully mapped. We will then [calculate our transriptome N50](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Transcriptome%20Contig%20Nx%20and%20ExN50%20stats). 
+We will conduct several QC analyses with the Trinity assembly, most of which are directly recommended by the authors of Trinity. In this step, we will [map our reads back to the assembly](https://github.com/trinityrnaseq/trinityrnaseq/wiki/RNA-Seq-Read-Representation-by-Trinity-Assembly) with the expectation that most (>70%) will be successfully mapped. We will then [calculate our transriptome N50](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Transcriptome%20Contig%20Nx%20and%20ExN50%20stats). 
 
 Step 4a: Mapping Reads to Assembled Transcriptome
 ------
-Our first assembly QC step will involve mapping our individual sequencing reads back to the assembly. This step is necessary to ensure that most reads (70-80%) can be mapped to the assembly as "proper pairs;" those that do not are likely the result of extremely low frequency, erroneous sequences, or instances where one of the two paired end sequences failed. In order to complete this operation, we must have access to `bowtie` and `samtools`, both of which are available via the `env-selector-menu` option on the cluster. Once all the appropriate software is available, we need to build a bowtie2 index. This operation will produce six files with the extension `bt2` and should take 10-15 minutes run on a single processor in interactive mode.
+Our first assembly QC step will involve mapping our individual sequencing reads back to the assembly. This step is necessary to ensure that most reads (70-80%) can be mapped to the assembly as "proper pairs;" those that do not are likely the result of extremely low frequency, erroneous sequences, or instances where one of the two paired end sequences failed. In order to complete this operation, we must have access to [bowtie](http://bowtie-bio.sourceforge.net/index.shtml) and [samtools](http://samtools.sourceforge.net/), both of which are available via the `env-selector-menu` option on the cluster. Once all the appropriate software is available, we need to build a `bowtie2` index. This operation will produce six files with the extension `bt2` and should take 10-15 minutes run on a single processor in interactive mode.
 ```
 bowtie2-build trinity_out_dir.Trinity.fasta Trinity_testes.fasta
 ```
@@ -83,7 +86,7 @@ Next we do the actual mapping, which is best submitted to the default queue beca
 #PBS -o mapping_testes_error
 bowtie2 --local --no-unal -x trinity.fasta -q -1 Testes_trimmed_R1.fastq.gz -2 Testes_trimmed_R2.fastq.gz | samtools view -Sb - | samtools sort -no - - > bowtie2.nameSorted.bam
 ```
-To get a summary of the mapping results, we can use a perl script from Trinity.
+To get a summary of the mapping results, we can use a perl script from `Trinity`.
 ```
 SAM_nameSorted_to_uniq_count_stats.pl bowtie2.nameSorted.bam
 
