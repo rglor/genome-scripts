@@ -292,6 +292,47 @@ blast_outfmt6_group_segments.pl blastx.outfmt6 trinity_out_dir.Trinity.fasta uni
 blast_outfmt6_group_segments.tophit_coverage.pl blast.outfmt6.grouped > analyze_groupsegments_topHit_coverage.log
 
 ```
+With anoles, we can use the proteome generated from the Anolis carolinensis genome project. This should take less than 24 hours.
+
+```
+#PBS -N blast_anole_skin.sh
+#PBS -l nodes=1:ppn=12:avx,mem=200000m,walltime=24:00:00
+#PBS -M glor@ku.edu
+#PBS -m abe
+#PBS -d /scratch/glor_lab/rich/distichus_genome_RNAseq/Skin/Anole_BLAST
+#PBS -j oe
+#PBS -o blast_anole_skin_error
+
+makeblastdb -in ASU_Acar_v2.1.prot.fa -dbtype prot
+blastx -query ../trinity_out_dir.Trinity.fasta -db ASU_Acar_v2.1.prot.fa -out blastx.outfmt6 -evalue 1e-20 -num_threads 12 -max_target_seqs 1 -outfmt 6
+analyze_blastPlus_topHit_coverage.pl blastx.outfmt6 ../trinity_out_dir.Trinity.fasta ASU_Acar_v2.1.prot.fa > analyze_blastPlus_topHit_coverage.log
+/tools/cluster/6.2/trinityrnaseq/2.2.0/util/misc/blast_outfmt6_group_segments.pl blastx.outfmt6 ../trinity_out_dir.Trinity.fasta ASU_Acar_v2.1.prot.fa > blast.outfmt6.grouped
+/tools/cluster/6.2/trinityrnaseq/2.2.0/util/misc/blast_outfmt6_group_segments.tophit_coverage.pl blast.outfmt6.grouped > analyze_groupsegments_topHit_coverage.log
+```
+
+Step 7: Use of TransRate for QC
+======
+TransRate (as of the 15-Oct-2016), transrate has some issues as mentioned in https://github.com/blahah/transrate/issues/201, so running both v1.0.1 and v.1.0.3 and splicing together their output should be attempted. Running Transrate should only take about 30 minutes to more than an hour if run across 12 processors.
+------
+``
+#PBS -N transrate_eye.sh
+#PBS -l nodes=1:ppn=12:avx,mem=200000m,walltime=2:00:00
+#PBS -M glor@ku.edu
+#PBS -m abe
+#PBS -d /scratch/glor_lab/rich/distichus_genome_RNAseq/Eye
+#PBS -j oe
+#PBS -o transrate_eye_error
+
+transrate --assembly trinity_out_dir.Trinity.fasta --left Eye_trimmed_R1.fastq.gz --right Eye_trimmed_R2.fastq.gz --threads 1 >> transrate_eye.log
+```
+
+```
+`transrate --assembly trinity_out_dir.Trinity.fasta --left Brain_trimmed_R1.fastq.gz --right Brain_trimmed_R2.fastq.gz --threads 8 >> transrate103.log
+
+mv transrate_results transrate_results_103
+
+transrate _1.0.1_ --assembly trinity_out_dir.Trinity.fasta --left Brain_trimmed_R1.fastq.gz --right Brain_trimmed_R2.fastq.gz --threads 8 >> transrate101.log
+```
 
 
 Step 4e: Compute DETONATE scores
@@ -303,12 +344,5 @@ Step 4e: Compute DETONATE scores
 /public/detonate-1.11-precompiled/rsem-eval/rsem-eval-calculate-score --paired-end --bam trin_rsem/bowtie.bam trinity_out_dir.Trinity.fasta sample_brain 200 --transcript-length-parameters /public/detonate-1.11-precompiled/rsem-eval/true_transcript_length_distribution/anolis_distichus.txt --strand-specific -p 4  >& rsem_eval.log
 ```
 
-Step 4f: QC of transcriptome assembly: TransRate (as of the 15-Oct-2016, transrate has some issues as mentioned in https://github.com/blahah/transrate/issues/201, so running both v1.0.1 and v.1.0.3 and splicing together their output.
-------
-```transrate --assembly trinity_out_dir.Trinity.fasta --left Brain_trimmed_R1.fastq.gz --right Brain_trimmed_R2.fastq.gz --threads 8 >> transrate103.log
 
-mv transrate_results transrate_results_103
-
-transrate _1.0.1_ --assembly trinity_out_dir.Trinity.fasta --left Brain_trimmed_R1.fastq.gz --right Brain_trimmed_R2.fastq.gz --threads 8 >> transrate101.log
-```
 
