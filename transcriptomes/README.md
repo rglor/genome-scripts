@@ -1,6 +1,6 @@
 Introduction to RNAseq Assembly and Analysis
 ======
-Methods for RNAseq assembly and analysis are not reasonably mature, with several established assemblers and associated analytical pipelines. Some aspects of these pipelines are shared by more standard methods for analysis of DNA sequence data. However, working with RNAseq data also presents a number of challenges that may be unfamiliar to researchers who have worked primarily with DNA. One of these challenges is the fact that most genes appear to produce multiple transcript isoforms ([Pan et al. 2008](http://dx.doi.org/10.1038/ng.259)); this presents a challenge to assembly algorithms and results in a far greater diversity of transcripts than one might expect based on estimates of gene diversity. Assemblers and associated applications tend to deal with this challenge by attempting to diagnose clusters of isoforms that are derived from the same gene, but know this will be impossible to do without error given the known difficulty with even distinguishing paralogous copies of the same gene. A second challenge is the fact that we expect RNAseq reads to be present in proportion to their abundance in the tissue from which we obtained RNA; for this reason, most assembly pipelines integrate read frequency data in the QC process.
+Methods for RNAseq assembly and analysis are not reasonably mature, with several established assemblers and associated analytical pipelines. Some aspects of these pipelines are shared by more standard methods for analysis of DNA sequence data. However, working with RNAseq data also presents a number of challenges that may be unfamiliar to researchers who have worked primarily with DNA. One of these challenges is the fact that most genes appear to produce multiple transcript isoforms ([Pan et al. 2008](http://dx.doi.org/10.1038/ng.259)); this presents a challenge to assembly algorithms and results in a far greater diversity of transcripts than one might expect based on estimates of gene diversity. Assemblers and associated applications tend to deal with this challenge by attempting to diagnose clusters of isoforms that are derived from the same gene, but know this will be impossible to do without error given the known difficulty with even distinguishing paralogous copies of the same gene. A second challenge is the fact that we expect RNAseq reads to be present in proportion to their abundance in the tissue from which we obtained RNA; for this reason, most assembly pipelines integrate read frequency data in the QC and analysis processes.
 
 The KU BI Pipeline
 ======
@@ -25,12 +25,7 @@ Preliminary QC of your sequences can be completed by applying [`fastqc`](http://
 fastqc -k 6 *
 ```
 
-If your sequences look OK after preliminary QC, its time to get your sequences ready for downstream analyses by trimming adaptors and eliminating low quality sequences and basecalls. Before going any further, you should start a log for subsequent output.
-
-```
-mkdir logs
-```
-Next use the function `cutadapt` to (1) trim Illumina adapter sequences, (2) discard reads <25 bp in length (otherwise *de novo* assembly in Trinity will fail because its kmer = 25) and (3) perform gentle trimming of low quality basecalls. Recent studies suggest that trimming to a relatively low PHRED score of 5 results in transcriptomes that are considerably more complete than those that result from more aggressive quality trimming, without a commensurate increase in errors ([MacManes 2014](http://journal.frontiersin.org/article/10.3389/fgene.2014.00013/full)).
+If your sequences look OK after preliminary QC, its time to get your sequences ready for downstream analyses by trimming adaptors and eliminating low quality sequences and basecalls. We are going to do this by using the function `cutadapt` to (1) trim Illumina adapter sequences, (2) discard reads <25 bp in length (otherwise *de novo* assembly in Trinity will fail because its kmer = 25) and (3) perform gentle trimming of low quality basecalls. Recent studies suggest that trimming to a relatively low PHRED score of 5 results in transcriptomes that are considerably more complete than those that result from more aggressive quality trimming, without a commensurate increase in errors ([MacManes 2014](http://journal.frontiersin.org/article/10.3389/fgene.2014.00013/full)). Running cut adapt for datasets the size of most of our individual transcriptomes is computationally non-trivial and the function does not use multiple threads, so best to give run your job with a walltime of 6 hours.
 ```
 #PBS -N cutadapt.sh
 #PBS -l nodes=1:ppn=1:avx,mem=16000m,walltime=5:00:00
@@ -40,13 +35,13 @@ Next use the function `cutadapt` to (1) trim Illumina adapter sequences, (2) dis
 #PBS -j oe
 #PBS -o cutadapterror
 
-cutadapt -a AGATCGGAAGAGC -A AGATCGGAAGAGC -q 5 -m 25 -o Testes_trimmed_R1.fastq.gz -p Testes_trimmed_R2.fastq.gz Testes_CTTGTA_R1.fastq.gz Testes_CTTGTA_R2.fastq.gz > logs/cutadapt.log
+cutadapt -a AGATCGGAAGAGC -A AGATCGGAAGAGC -q 5 -m 25 -o Testes_trimmed_R1.fastq.gz -p Testes_trimmed_R2.fastq.gz Testes_CTTGTA_R1.fastq.gz Testes_CTTGTA_R2.fastq.gz > cutadapt.log
 ```
 After trimming is complete, use `fastqc` on the resulting files to check that adapters have been trimmed and that the newly generated `fastq` files look good. 
 
 Step 3: *de novo* Assembly with Trinity
 ======
-After you've conducted the basic QC steps described above, you're ready to do your first *de novo* assembly. We use the `Trinity` package for *de novo* transcriptome assembly. Because *de novo* assembly with `Trinity` requires a large amount of computer memory (~1GB RAM/1 million sequence reads) and generates a large number of files (~900,000) you should be sure that your quotas are able to accommodate these requirements prior to initiating assembly. In the script below, we will run *de novo* assembly using a high memory node via the `bigm` queue; moreover, hundreds of thousands of files that are temporarily required during the assembly process are stored on the node running the analyses (`file=200gb`) rather than in the scratch space, which has stricter constraints on file size and number. Importantly, all of the temporary files generated during the course of the `Trinity` analyses are deleted at the end of the script to avoid gumming up the cluster's hard drives. The main output from `Trinity` will be a large (e.g., 400+ MB for a dataset with 40 million reads) `fasta` file called `trinity_out_dir.Trinity.fasta` that will include each of your assembled transcripts. 
+After you've conducted the basic QC steps described above, you're ready to do your first *de novo* assembly. We use the `Trinity` package for *de novo* transcriptome assembly. Because *de novo* assembly with `Trinity` requires a large amount of computer memory (~1GB RAM/1 million sequence reads) and generates a large number of files (~900,000) you should be sure that your quotas are able to accommodate these requirements prior to initiating assembly. In the script below, we will run *de novo* assembly using a high memory node via the `bigm` queue; moreover, hundreds of thousands of files that are temporarily required during the assembly process are stored on the node running the analyses (`file=200gb`) rather than in the scratch space, which has stricter constraints on file size and number. Importantly, all of the temporary files generated during the course of the `Trinity` analyses are deleted at the end of the script to avoid gumming up the cluster's hard drives. The main output from `Trinity` will be a large (e.g., 400+ MB for a dataset with 40 million reads) `fasta` file called `trinity_out_dir.Trinity.fasta` that will include each of your assembled transcripts. This operation will take a day or more running on multiple threads.
 
 ```
 #PBS -N trinity_heart
@@ -310,11 +305,10 @@ analyze_blastPlus_topHit_coverage.pl blastx.outfmt6 ../trinity_out_dir.Trinity.f
 /tools/cluster/6.2/trinityrnaseq/2.2.0/util/misc/blast_outfmt6_group_segments.tophit_coverage.pl blast.outfmt6.grouped > analyze_groupsegments_topHit_coverage.log
 ```
 
-Step 7: Use of TransRate for QC
+Step 7: Generate TransRate Score
 ======
-TransRate (as of the 15-Oct-2016), transrate has some issues as mentioned in https://github.com/blahah/transrate/issues/201, so running both v1.0.1 and v.1.0.3 and splicing together their output should be attempted. Running Transrate should only take about 30 minutes to more than an hour if run across 12 processors.
-------
-``
+TransRate is a program for assessing overall transcriptome quality. Running Transrate should only take about 30 minutes to more than an hour if run across 12 processors.
+```
 #PBS -N transrate_eye.sh
 #PBS -l nodes=1:ppn=12:avx,mem=200000m,walltime=2:00:00
 #PBS -M glor@ku.edu
@@ -325,7 +319,7 @@ TransRate (as of the 15-Oct-2016), transrate has some issues as mentioned in htt
 
 transrate --assembly trinity_out_dir.Trinity.fasta --left Eye_trimmed_R1.fastq.gz --right Eye_trimmed_R2.fastq.gz --threads 1 >> transrate_eye.log
 ```
-
+TransRate (as of the 15-Oct-2016), transrate has some issues as mentioned in https://github.com/blahah/transrate/issues/201, so running both v1.0.1 and v.1.0.3 and splicing together their output should be attempted. 
 ```
 `transrate --assembly trinity_out_dir.Trinity.fasta --left Brain_trimmed_R1.fastq.gz --right Brain_trimmed_R2.fastq.gz --threads 8 >> transrate103.log
 
@@ -334,9 +328,8 @@ mv transrate_results transrate_results_103
 transrate _1.0.1_ --assembly trinity_out_dir.Trinity.fasta --left Brain_trimmed_R1.fastq.gz --right Brain_trimmed_R2.fastq.gz --threads 8 >> transrate101.log
 ```
 
-
-Step 4e: Compute DETONATE scores
-------
+Step 8: Compute DETONATE scores
+======
 ```
 #RSEM (reference-free mode)
 /public/detonate-1.11-precompiled/rsem-eval/rsem-eval-estimate-transcript-length-distribution trinity_out_dir.Trinity.fasta /public/detonate-1.11-precompiled/rsem-eval/true_transcript_length_distribution/anolis_distichus.txt
