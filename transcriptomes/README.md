@@ -60,6 +60,45 @@ mv $work_dir/trinity_out_dir.Trinity.fasta /scratch/glor_lab/rich/distichus_geno
 rm -rf $work_dir
 
 ```
+
+Step 3: Assembly
+======
+After you've conducted the basic QC steps described above, you're ready to do assemble your transcriptome.
+
+Step 3a: *De novo* with Trinity
+-----
+We use the `Trinity` package for *de novo* transcriptome assembly. Because *de novo* assembly with `Trinity` requires a large amount of computer memory (~1GB RAM/1 million sequence reads) and generates a large number of files (~900,000) you should be sure that your quotas are able to accommodate these requirements prior to initiating assembly. In the script below, we will run *de novo* assembly using a high memory node via the `bigm` queue; moreover, hundreds of thousands of files that are temporarily required during the assembly process are stored on the node running the analyses (`file=200gb`) rather than in the scratch space, which has stricter constraints on file size and number. Importantly, all of the temporary files generated during the course of the `Trinity` analyses are deleted at the end of the script to avoid gumming up the cluster's hard drives. The main output from `Trinity` will be a large (e.g., 400+ MB for a dataset with 40 million reads) `fasta` file called `trinity_out_dir.Trinity.fasta` that will include each of your assembled transcripts. This operation will take a day or more running on multiple threads.
+
+```
+#PBS -N trinity_heart
+#PBS -q bigm -l nodes=1:ppn=24:avx,mem=512000m,walltime=72:00:00,file=200gb
+#PBS -M glor@ku.edu
+#PBS -m abe
+#PBS -d /scratch/glor_lab/rich/distichus_genome_RNAseq/Heart
+#PBS -j oe
+#PBS -o trinity_heart_error
+
+work_dir=$(mktemp -d) #Generates name for working directory where temporary files will be stored.
+mkdir $work_dir #Generates working directory for temporary file storage.
+cp /scratch/glor_lab/rich/distichus_genome_RNAseq/Heart/Heart_trimmed* $work_dir #Copies sequence files for assembly to new working directory on node doing analyses.
+Trinity -seqType fq --max_memory 512G --left $work_dir/Heart_trimmed_R1.fastq.gz --right $work_dir/Heart_trimmed_R2.fastq.gz -SS_lib_type RF --CPU 24 --full_cleanup --normalize_reads --min_kmer_cov 2 --output $work_dir/trinity_out_dir >> trinity.log
+mv $work_dir/trinity_out_dir.Trinity.fasta /scratch/glor_lab/rich/distichus_genome_RNAseq/Heart/ #Moves files from node doing analyses to scratch drive.
+rm -rf $work_dir
+
+```
+Step 3b: Reference-based Assembly via BWA
+-----
+Here we will use BWA to assemble our transcriptome with reference to the previously published and curated transriptome for *Anolis carolinensis*. 
+```
+BWA_ALN1="bwa aln -n 5 -q 20 -t 4 -f $SAI_FILE1 $REF_FILE /home/data/anoles/synced_clt_${NAMES[$i]}_R1.fastq"
+        BWA_ALN2="bwa aln -n 5 -q 20 -t 4 -f $SAI_FILE2 $REF_FILE /home/data/anoles/synced_clt_${NAMES[$i]}_R2.fastq"
+BWA_SAMPE="bwa sampe -P $REF_FILE $SAI_FILE1 $SAI_FILE2 /home/data/anoles/synced_clt_${NAMES[$i]}_R1.fastq /home/data/anoles/synced_clt_${NAMES[$i]}_R2.fastq 2> /$
+
+        SAMTOOLS_SORT="samtools sort $UNSORT_BAM_FILE ${NAMES[$i]}.pre"
+
+        SAMTOOLS_CALMD="samtools calmd -AEbr ${NAMES[$i]}.pre.bam $REF_FILE 2> /dev/null > ${NAMES[$i]}.bam"
+```
+
 Step 4: Basic Transcriptome QC
 ======
 We will conduct several QC analyses with the Trinity assembly, most of which are directly recommended by the authors of Trinity. In this step, we will [map our reads back to the assembly](https://github.com/trinityrnaseq/trinityrnaseq/wiki/RNA-Seq-Read-Representation-by-Trinity-Assembly) with the expectation that most (>70%) will be successfully mapped. We will then [calculate our transriptome N50](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Transcriptome%20Contig%20Nx%20and%20ExN50%20stats). 
