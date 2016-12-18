@@ -1,6 +1,6 @@
 Introduction to RNAseq Assembly and Analysis
 ======
-Methods for RNAseq assembly and analysis are not reasonably mature, with several established assemblers and associated analytical pipelines. Some aspects of these pipelines are shared by more standard methods for analysis of DNA sequence data. However, working with RNAseq data also presents a number of challenges that may be unfamiliar to researchers who have worked primarily with DNA. One of these challenges is the fact that most genes appear to produce multiple transcript isoforms ([Pan et al. 2008](http://dx.doi.org/10.1038/ng.259)); this presents a challenge to assembly algorithms and results in a far greater diversity of transcripts than one might expect based on estimates of gene diversity. Assemblers and associated applications tend to deal with this challenge by attempting to diagnose clusters of isoforms that are derived from the same gene, but know this will be impossible to do without error given the known difficulty with even distinguishing paralogous copies of the same gene. A second challenge is the fact that we expect RNAseq reads to be present in proportion to their abundance in the tissue from which we obtained RNA; for this reason, most assembly pipelines integrate read frequency data in the QC and analysis processes.
+Methods for RNAseq assembly and analysis are not reasonably mature, with several established assemblers and associated analytical pipelines. For a general review of best practices, see Conesa et al. ([2016](http://dx.doi.org/10.1186/s13059-016-0881-8)). Some aspects of existing pipelines are shared by more standard methods for analysis of DNA sequence data. However, working with RNAseq data also presents a number of challenges that may be unfamiliar to researchers who have worked primarily with DNA. One of these challenges is the fact that most genes appear to produce multiple transcript isoforms ([Pan et al. 2008](http://dx.doi.org/10.1038/ng.259)); this presents a challenge to assembly algorithms and results in a far greater diversity of transcripts than one might expect based on estimates of gene diversity. Assemblers and associated applications tend to deal with this challenge by attempting to diagnose clusters of isoforms that are derived from the same gene, but know this will be impossible to do without error given the known difficulty with even distinguishing paralogous copies of the same gene. A second challenge is the fact that we expect RNAseq reads to be present in proportion to their abundance in the tissue from which we obtained RNA; for this reason, most assembly pipelines integrate read frequency data in the QC and analysis processes.
 
 The KU BI Pipeline
 ======
@@ -86,7 +86,7 @@ mv $work_dir/trinity_out_dir.Trinity.fasta /scratch/glor_lab/rich/distichus_geno
 rm -rf $work_dir
 
 ```
-Step 3b: Reference-based Assembly via BWA
+Step 3b: Reference-based Assembly via TopHat
 -----
 Here we will use BWA to assemble our transcriptome with reference to the previously published and curated transriptome for *Anolis carolinensis*. 
 ```
